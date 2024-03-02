@@ -59,7 +59,6 @@ const { update_userinfo_schema, update_password_schema, update_avatar_schema } =
  *       scheme: bearer
  *       bearerFormat: JWT
  */
-
 router.get('/userinfo', userinfoHandler.getUserInfo)
 //更新用户信息
 //更新用户信息的swagger接口注释
@@ -210,5 +209,6 @@ router.post('/updatepwd', expressJoi(update_password_schema), userinfoHandler.up
  *       bearerFormat: JWT
  */
 router.post('/uploadAvatar', userinfoHandler.uploadAvatar)
+
 //导出路由
 module.exports = router

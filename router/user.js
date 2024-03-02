@@ -9,6 +9,8 @@ const routerHandler = require('../router_handler/user.js')
 const expressJoi = require('@escook/express-joi')
 //导入需要的验证规则对象
 const { reg_login_schema } = require('../schema/user.js')
+// 生成验证码
+router.get('/captcha', routerHandler.captcha)
 
 //编写接口
 /**
@@ -50,9 +52,7 @@ const { reg_login_schema } = require('../schema/user.js')
  *       500:
  *         description: 服务器内部错误，登录失败
  */
-
 router.post('/reguser', expressJoi(reg_login_schema), routerHandler.regUser)
-
 //登录
 /**
  * 注册用户
@@ -74,6 +74,9 @@ router.post('/reguser', expressJoi(reg_login_schema), routerHandler.regUser)
  *               password:
  *                 type: string
  *                 description: 密码
+ *               code:
+ *                 type: string
+ *                 description: 验证码
  *     responses:
  *       200:
  *         description: 登录成功
@@ -97,6 +100,12 @@ router.post('/reguser', expressJoi(reg_login_schema), routerHandler.regUser)
  *         description: 服务器内部错误，登录失败
  */
 router.post('/login', routerHandler.login)
+
+//添加一个上传文件的接口
+router.post('/upload', routerHandler.uploadFile)
+
+//退出登录
+router.post('/logout', routerHandler.logout)
 //导出路由模块
 
 module.exports = router

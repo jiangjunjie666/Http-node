@@ -1,36 +1,34 @@
 const express = require('express')
 const Joi = require('joi')
 const app = express()
+const fs = require('fs')
+const path = require('path')
 //引入swagger接口文档配置
 const swagger = require('./utils/swagger')
+const session = require('express-session')
+
+const db = require('./dbMysql/index')
+var cookieParser = require('cookie-parser')
+
 swagger(app)
 
-//配置解析form-data的中间件
-// const multer = require('multer')
-// 创建一个存储对象，用于设置文件存储的相关配置
-// const storage = multer.diskStorage({
-//   // 指定文件存储的目录
-//   destination: function (req, file, cb) {
-//     cb(null, 'uploads/')
-//   },
-//   // 指定文件的保存的文件名
-//   filename: function (req, file, cb) {
-//     cb(null, file.fieldname + '-' + Date.now())
-//   }
-// })
-// // 创建上传对象
-// const upload = multer({ storage: storage })
-
-// 使用multer中间件解析form-data数据
-// app.use(upload.none())
-
-// app.get('/', (req, res) => {
-//   res.send('服务启动成功')
-// })
+//读取撤销的json文件
 
 //配置跨域
-const cors = require('cors')
-app.use(cors())
+// const cors = require('cors')
+// app.use(cors())
+// 使用 express-session 中间件
+app.use(cookieParser())
+app.use(
+  session({
+    secret: 'XiaoMan',
+    name: 'xm.session',
+    rolling: true,
+    cookie: { maxAge: 99999 },
+    resave: true, // 添加这一行
+    saveUninitialized: true
+  })
+)
 
 //配置静态资源
 app.use(express.static(__dirname + '/public'))
@@ -38,7 +36,7 @@ app.use(express.static(__dirname + '/public'))
 app.use(express.urlencoded({ extended: false })) //请求时需要加上请求头：application/x-www-form-urlencoded
 //封装请求错误函数
 app.use((req, res, next) => {
-  res.cc = function (err, status = 1) {
+  res.cc = function (err, status = 201) {
     res.send({
       status,
       message: err instanceof Error ? err.message : err
@@ -51,12 +49,73 @@ const expressJWT = require('express-jwt')
 const config = require('./config')
 app.use(expressJWT({ secret: config.jwtSecretKey }).unless({ path: [/^\/api/] }))
 //除了/api接口不需要token认证以外其他都需要token认证
+
+//判断状态是否为正常状态中间件
+// 判断函数中间件
+const checkStatus = (req, res, next) => {
+  // 在这里判断 req.status 是否为1
+  const sql = 'select status from t_users where id=?'
+  db.query(sql, req.user.id, (err, result) => {
+    if (err) return res.cc(err)
+
+    if (result[0].status !== 1) {
+      res.status(401).send('当前账号已被禁用')
+      //修改online值
+      const sql = `update t_users set online=0 where id = "${req.user.id}"`
+      db.query(sql, (err, result) => {
+        if (err) return res.cc(err)
+      })
+    } else {
+      next()
+    }
+  })
+}
+
+// 自定义中间件，用于检查令牌是否被撤销
+const checkRevoked = (req, res, next) => {
+  // 模拟撤销列表
+  const revokedTokens = []
+  const revokedTokenPath = path.join(__dirname, 'public/jsonData/revokedToken.json')
+  fs.readFile(revokedTokenPath, 'utf-8', (err, data) => {
+    if (err) {
+      console.log(err)
+      return next() // 继续执行下一个中间件
+    } else {
+      try {
+        revokedTokens.push(...JSON.parse(data))
+        const token = req.headers.authorization + ''
+        if (revokedTokens.some((t) => t === token)) {
+          // 令牌已经被撤销，拒绝访问
+          return res.status(401).send('令牌已经被撤销，拒绝访问')
+        }
+      } catch (err) {
+        console.log(err)
+      }
+      next() // 继续执行下一个中间件
+    }
+  })
+}
+app.use(checkRevoked)
 //导入登录注册路由模块
 const userRouter = require('./router/user.js')
 app.use('/api', userRouter)
 //导入用户信息模块
 const userinfoRouter = require('./router/userinfo')
-app.use('/my', userinfoRouter)
+app.use('/my', checkStatus, userinfoRouter)
+//导入人员信息模块
+const personRouter = require('./router/personnel_data.js')
+app.use('/person', checkStatus, personRouter)
+
+const basicsRouter = require('./router/basics')
+app.use('/basics', checkStatus, basicsRouter)
+//上传文件的router
+const uploadAllRouter = require('./router/uploadAll')
+app.use('/api', checkStatus, uploadAllRouter)
+//路由权限处理相关的中间件
+const roleRouter = require('./router/role')
+
+app.use('/role', checkStatus, roleRouter)
+
 //定义表单数据判断错误级别中间件 （在路由之后）
 app.use((err, req, res, next) => {
   //验证失败的错误
@@ -65,12 +124,14 @@ app.use((err, req, res, next) => {
   }
   //身份认证失败之后的错误
   if (err.name === 'UnauthorizedError') {
-    return res.cc('身份认证失败')
+    //返回错误
+    return res.status(401).send('身份认证失败')
   }
   //未知错误
   res.cc(err)
+  next()
 })
 
-app.listen(3000, () => {
-  console.log('api server running at http://127.0.0.1:3000')
+app.listen(config.port, () => {
+  console.log(`api server running at ${config.server}:${config.port}`)
 })

@@ -6,10 +6,11 @@ const bcrypt = require('bcryptjs')
 //导入处理文件上传的包
 const formidable = require('formidable')
 const path = require('path')
+
 //查询用户信息
 exports.getUserInfo = (req, res) => {
   console.log(req.user)
-  const sql = 'select username,id,avatar from users where id=?'
+  const sql = 'select username,id,avatar from t_users where id=?'
   db.query(sql, req.user.id, (err, result) => {
     // console.log(result)
     if (err) {
@@ -31,7 +32,7 @@ exports.getUserInfo = (req, res) => {
 exports.updateUserInfo = (req, res) => {
   const userinfo = req.body
   console.log(userinfo)
-  const sql = 'update users set ? where id=?'
+  const sql = 'update t_users set ? where id=?'
   db.query(sql, [req.body, req.body.id], (err, result) => {
     if (err) {
       return res.cc(err)
@@ -45,7 +46,7 @@ exports.updateUserInfo = (req, res) => {
 //更改密码
 exports.updatePwd = (req, res) => {
   //根据id查询语句
-  const sql = 'select * from users where id=?'
+  const sql = 'select * from t_users where id=?'
   db.query(sql, req.user.id, (err, result) => {
     if (err) {
       return res.cc(err)
@@ -60,7 +61,7 @@ exports.updatePwd = (req, res) => {
     }
 
     //更新数据库中的密码
-    const newsql = 'update users set password=? where id=?'
+    const newsql = 'update t_users set password=? where id=?'
     //对新密码进行加密
     const newPwd = bcrypt.hashSync(req.body.newPwd, 10)
     db.query(newsql, [newPwd, req.user.id], (err, result) => {
@@ -82,12 +83,15 @@ exports.uploadAvatar = (req, res) => {
     //保持文件后缀
     keepExtensions: true
   })
+  // console.log(form)
   form.parse(req, (err, fields, files) => {
     if (err) return res.cc(err)
+    console.log(fields)
+    console.log(files)
     //服务器保存图片的路径
     let url = '/images/' + files.file.newFilename
     //将图片路径上传至mysql
-    const sql = 'update users set avatar=? where id=?'
+    const sql = 'update t_users set avatar=? where id=?'
     db.query(sql, [url, req.user.id], (err, result) => {
       if (err) return res.cc(err)
       console.log('图片数据库上传成功')

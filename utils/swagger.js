@@ -7,9 +7,9 @@ const options = {
   definition: {
     openapi: '3.0.0',
     info: {
-      title: 'api-docs',
+      title: '实验室项目api文档',
       version: '1.0.0',
-      description: `HTTP接口管理系统接口文档`
+      description: `api-docs`
     }
   },
   // 去哪个路由下收集 swagger 注释
