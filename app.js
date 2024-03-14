@@ -3,6 +3,7 @@ const Joi = require('joi')
 const app = express()
 const fs = require('fs')
 const path = require('path')
+const dayjs = require('dayjs')
 //引入swagger接口文档配置
 const swagger = require('./utils/swagger')
 const session = require('express-session')
@@ -11,8 +12,6 @@ const db = require('./dbMysql/index')
 var cookieParser = require('cookie-parser')
 
 swagger(app)
-
-//读取撤销的json文件
 
 //配置跨域
 // const cors = require('cors')
@@ -95,7 +94,45 @@ const checkRevoked = (req, res, next) => {
     }
   })
 }
-app.use(checkRevoked)
+//自定义中间件，接口没被访问一次，就增加一次online值
+
+function trackApiUsage(req, res, next) {
+  // 增加调用次数
+  //获取当前的时间
+  const time = dayjs().format('YYYY-MM-DD')
+  //先去查看是否有这个日期的记录
+  const sql = `SELECT * FROM t_api_usage WHERE last_updated = '${time}'`
+  db.query(sql, (err, result) => {
+    if (err) {
+      // 处理错误
+      console.error(err)
+    }
+    if (result.length === 0) {
+      //如果没有这个日期的记录，就插入一条记录
+      const sql = `INSERT INTO t_api_usage (last_updated, count) VALUES ('${time}', 1)`
+      db.query(sql, (err, result) => {
+        if (err) {
+          // 处理错误
+          console.error(err)
+        }
+        // 继续处理请求
+        next()
+      })
+    } else {
+      db.query(`UPDATE t_api_usage SET count = count + 1 WHERE last_updated = '${time}'`, (err, result) => {
+        if (err) {
+          // 处理错误
+          console.error(err)
+        }
+        // 继续处理请求
+        next()
+      })
+    }
+  })
+}
+
+app.use(trackApiUsage)
+
 //导入登录注册路由模块
 const userRouter = require('./router/user.js')
 app.use('/api', userRouter)
@@ -105,17 +142,17 @@ app.use('/my', checkStatus, userinfoRouter)
 //导入人员信息模块
 const personRouter = require('./router/personnel_data.js')
 app.use('/person', checkStatus, personRouter)
-
 const basicsRouter = require('./router/basics')
 app.use('/basics', checkStatus, basicsRouter)
 //上传文件的router
 const uploadAllRouter = require('./router/uploadAll')
-app.use('/api', checkStatus, uploadAllRouter)
+app.use('/api', uploadAllRouter)
 //路由权限处理相关的中间件
 const roleRouter = require('./router/role')
-
 app.use('/role', checkStatus, roleRouter)
-
+//竞赛路由
+const competitionRouter = require('./router/competition')
+app.use('/competition', checkStatus, competitionRouter)
 //定义表单数据判断错误级别中间件 （在路由之后）
 app.use((err, req, res, next) => {
   //验证失败的错误
@@ -123,9 +160,12 @@ app.use((err, req, res, next) => {
     return res.cc(err)
   }
   //身份认证失败之后的错误
-  if (err.name === 'UnauthorizedError') {
-    //返回错误
-    return res.status(401).send('身份认证失败')
+  if (err.name === 'UnauthorizedError' && err.message === 'invalid token') {
+    return res.status(401).send('无效的token')
+  }
+  if (err.name === 'UnauthorizedError' && err.message === 'jwt expired') {
+    //将这个用户的是否在线修改为不在线
+    return res.status(401).send('token过期')
   }
   //未知错误
   res.cc(err)

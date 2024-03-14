@@ -107,5 +107,6 @@ router.post('/upload', routerHandler.uploadFile)
 //退出登录
 router.post('/logout', routerHandler.logout)
 //导出路由模块
-
+//设置online为0
+router.put('/online', routerHandler.online)
 module.exports = router

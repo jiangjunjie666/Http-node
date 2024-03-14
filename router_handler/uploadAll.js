@@ -14,11 +14,11 @@ exports.bannerUpload = (req, res) => {
   })
   form.parse(req, (err, fields, files) => {
     if (err) return res.cc(err)
-    console.log(fields)
+    // console.log(fields)
     const imgurl = config.server + ':' + config.port + '/images/banner/' + files.file.newFilename
     //将图片路径上传至mysql
     const sql = `insert into t_carousel_images (img_url,img_description) values ('${imgurl}','${fields.name}')`
-    console.log(sql)
+    // console.log(sql)
     db.query(sql, (err, result) => {
       if (err) return res.cc(err)
       res.send({
@@ -29,6 +29,72 @@ exports.bannerUpload = (req, res) => {
           name: fields.name
         }
       })
+    })
+  })
+}
+
+exports.competitionUpload = (req, res) => {
+  const form = formidable({
+    multiples: true,
+    uploadDir: path.join(__dirname, '/../public/images/competition'),
+    //保持文件后缀
+    keepExtensions: true
+  })
+  form.parse(req, (err, fields, files) => {
+    if (err) return res.cc(err)
+    const imgurl = config.server + ':' + config.port + '/images/competition/' + files.file.newFilename
+    //将图片路径上传至mysql
+    res.send({
+      code: 200,
+      message: '上传成功',
+      data: {
+        url: imgurl,
+        name: fields.name
+      }
+    })
+  })
+}
+
+exports.personUpload = (req, res) => {
+  const form = formidable({
+    multiples: true,
+    uploadDir: path.join(__dirname, '/../public/images/personPhoto'),
+    //保持文件后缀
+    keepExtensions: true
+  })
+  form.parse(req, (err, fields, files) => {
+    if (err) return res.cc(err)
+    const imgurl = config.server + ':' + config.port + '/images/personPhoto/' + files.file.newFilename
+    //将图片路径上传至mysql
+    res.send({
+      code: 200,
+      message: '上传成功',
+      data: {
+        url: imgurl,
+        name: fields.name
+      }
+    })
+  })
+}
+
+exports.prizeUpload = (req, res) => {
+  const form = formidable({
+    multiples: true,
+    uploadDir: path.join(__dirname, '/../public/images/award'),
+    //保持文件后缀
+    keepExtensions: true
+  })
+  form.parse(req, (err, fields, files) => {
+    if (err) return res.cc(err)
+    const imgurl = config.server + ':' + config.port + '/images/award/' + files.file.newFilename
+    //将图片路径上传至mysql
+    res.send({
+      code: 200,
+      message: '上传成功',
+      data: {
+        url: imgurl,
+        name: fields.name
+      }
     })
   })
 }

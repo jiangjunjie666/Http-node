@@ -14,7 +14,7 @@ const fs = require('fs')
 //注册路由函数
 exports.regUser = (req, res) => {
   const userinfo = req.body
-  console.log(userinfo)
+  // console.log(userinfo)
   //对表单数据进行合法性判断
   if (!userinfo.username || !userinfo.password) {
     return res.cc('用户名或密码不合法')
@@ -58,7 +58,7 @@ exports.regUser = (req, res) => {
 exports.login = (req, res) => {
   const userinfo = req.body
   const { username, password, code } = userinfo
-  console.log(userinfo)
+  // console.log(userinfo)
   // 获取生成验证码时存储在 session 中的验证码文本
   const expectedcode = req.session.captcha
   // 检查验证码是否正确
@@ -77,7 +77,7 @@ exports.login = (req, res) => {
 
     // 判断密码是否正确
     const compareResult = bcrypt.compareSync(password, result[0].password)
-    console.log(compareResult)
+    // console.log(compareResult)
     if (!compareResult) {
       return res.cc('登录失败')
     }
@@ -85,6 +85,10 @@ exports.login = (req, res) => {
     //查看其状态是否为禁用
     if (result[0].status === 0) {
       return res.cc('账号被禁用')
+    }
+    //查看是否在线
+    if (result[0].online === 1) {
+      return res.cc('账号已在线')
     }
     // 生成客户端需要的token
     const user = { ...result[0], password: '', avatar: '' }
@@ -113,18 +117,18 @@ exports.login = (req, res) => {
 }
 
 exports.captcha = (req, res) => {
-  const Captcha = svgCaptcha.create({
+  const Captcha = svgCaptcha.createMathExpr({
     width: 110,
     height: 33,
     fontSize: 50,
     background: '#fff', // 背景色
-    color: true, // 字体颜色是否随机
-    noise: 1, // 干扰线的数量
-    ignoreChars: '0o1i' // 忽略的字符
+    mathMax: 9,
+    mathMin: 1,
+    mathOperator: '+'
   })
   // 将验证码文本存储在 session 中
   req.session.captcha = Captcha.text
-  console.log(Captcha.text)
+  // console.log(Captcha.text)
   res.type('svg') // 设置响应类型为 SVG 图片
   res.send(Captcha.data)
 }
@@ -138,8 +142,8 @@ exports.uploadFile = (req, res) => {
   })
   form.parse(req, (err, fields, files) => {
     if (err) return res.cc(err)
-    console.log(fields)
-    console.log(files)
+    // console.log(fields)
+    // console.log(files)
     //服务器保存图片的路径
     let url = '/images/' + files.file.newFilename
     //将图片路径上传至mysql
@@ -154,8 +158,7 @@ exports.uploadFile = (req, res) => {
 exports.logout = (req, res) => {
   const { id, token } = req.body
   //清除token
-  console.log(token)
-  //读取json文件
+
   const revokedTokens = []
   const revokedTokenPath = path.join(__dirname, '../public/jsonData/revokedToken.json')
   fs.readFile(revokedTokenPath, 'utf-8', (err, data) => {
@@ -167,7 +170,7 @@ exports.logout = (req, res) => {
     }
     revokedTokens.push(...JSON.parse(data))
     revokedTokens.push(token)
-    console.log(revokedTokens)
+    // console.log(revokedTokens)
     //再将文件写入json文件
     fs.writeFile(revokedTokenPath, JSON.stringify(revokedTokens, null, 2) + '\n', (err) => {
       if (err) {
@@ -189,6 +192,23 @@ exports.logout = (req, res) => {
         code: 200,
         message: '退出登录成功'
       })
+    })
+  })
+}
+
+exports.online = (req, res) => {
+  const id = req.query.id
+  const sql = `update t_users set online=0 where id = "${id}"`
+  db.query(sql, (err, result) => {
+    if (err) {
+      return res.send({
+        code: 500,
+        message: '退出登录失败'
+      })
+    }
+    res.send({
+      code: 200,
+      message: '退出登录成功'
     })
   })
 }

@@ -86,8 +86,8 @@ exports.uploadAvatar = (req, res) => {
   // console.log(form)
   form.parse(req, (err, fields, files) => {
     if (err) return res.cc(err)
-    console.log(fields)
-    console.log(files)
+    // console.log(fields)
+    // console.log(files)
     //服务器保存图片的路径
     let url = '/images/' + files.file.newFilename
     //将图片路径上传至mysql

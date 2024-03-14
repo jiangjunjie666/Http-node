@@ -3,6 +3,7 @@ const express = require('express')
 const router = express.Router()
 
 const roleHandler = require('../router_handler/role')
+
 //获取所有管理员的角色信息
 router.get('/adminList', roleHandler.getAdminList)
 //增加管理员

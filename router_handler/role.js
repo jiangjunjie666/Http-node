@@ -1,6 +1,7 @@
 const db = require('../dbMysql/index')
 //导入加密操作包
 const bcrypt = require('bcryptjs')
+
 //获取所有的角色权限信息
 exports.getRoleList = (req, res) => {
   // 做分页
@@ -169,7 +170,7 @@ exports.getAdminList = (req, res) => {
 //增加管理员
 exports.adminAdd = (req, res) => {
   const { username, password, role_name } = req.body
-  console.log(username, password, role_name)
+  // console.log(username, password, role_name)
   //判断其用户名是否已经存在
   const sql = `SELECT * FROM t_users WHERE username = '${username}'`
   db.query(sql, (err, results) => {
@@ -177,8 +178,8 @@ exports.adminAdd = (req, res) => {
     if (results.length > 0) return res.cc('用户名已存在')
     //对密码进行加密
     const password1 = bcrypt.hashSync(password, 10)
-    const sql = `INSERT INTO t_users (username, password, role_name) VALUES ('${username}', '${password1}', '${role_name}')`
-    console.log(sql)
+    const sql = `INSERT INTO t_users (username, password, role_name,authority) VALUES ('${username}', '${password1}', '${role_name}','首页')`
+    // console.log(sql)
     db.query(sql, (err, results) => {
       if (err) return res.cc(err)
       res.send({
@@ -221,7 +222,7 @@ exports.adminEdit = (req, res) => {
 //管理员状态发生变化
 exports.adminStatus = (req, res) => {
   const { id, status } = req.query
-  console.log(id, status)
+  // console.log(id, status)
   const sql = `UPDATE t_users SET status = ${status} WHERE id = ${id}`
   db.query(sql, (err, results) => {
     if (err) return res.cc(err)
@@ -289,7 +290,19 @@ exports.adminRole = (req, res) => {
 
 //对角色进行权限分配
 exports.allotRole = (req, res) => {
-  const { id, roleStr } = req.body
+  const { id, name, roleStr } = req.body
+  //根据name，查询所有的用户表，对其匹配的角色进行权限分配
+  const sqlArr = `SELECT * FROM t_users WHERE allot_role = '${name}'`
+  db.query(sqlArr, (err, results) => {
+    if (err) return res.cc(err)
+    results.forEach((item) => {
+      const sql = `update t_users set authority = '${roleStr}' where id = ${item.id}`
+      db.query(sql, (err, results) => {
+        if (err) return res.cc(err)
+      })
+    })
+  })
+
   const sql = `update t_role_users set route_permissions = '${roleStr}' where id = ${id}`
   db.query(sql, (err, results) => {
     if (err) return res.cc(err)

@@ -3,6 +3,7 @@ const fs = require('fs')
 const path = require('path')
 //导入config
 const config = require('../config')
+const { addOnline } = require('../utils/addOnline')
 //获取轮播图的数据
 exports.bannerList = (req, res) => {
   const sql = 'select * from t_carousel_images'
@@ -19,9 +20,9 @@ exports.bannerList = (req, res) => {
 exports.bannerDel = (req, res) => {
   const { id, imgUrl } = req.query
   //删除文件夹中的图片
-  console.log(imgUrl)
+  // console.log(imgUrl)
   const filePath = path.join(__dirname, `../public${imgUrl.split(config.server + ':' + config.port)[1]}`)
-  console.log(filePath)
+  // console.log(filePath)
   fs.unlink(filePath, (err) => {
     if (err) return res.cc(err)
   })

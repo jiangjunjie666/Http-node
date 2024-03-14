@@ -33,7 +33,7 @@ exports.getPersonList = (req, res) => {
       key: inSchoolKey
     })
   }
-  console.log(whereArr)
+  // console.log(whereArr)
   let whereSql = ''
   //筛选需要的条件
   whereArr.forEach((item) => {
@@ -45,10 +45,10 @@ exports.getPersonList = (req, res) => {
   })
   // 计算正确的偏移量
   const offset = (page - 1) * pageSize
-  console.log(whereSql)
+  // console.log(whereSql)
   // 使用参数化查询
   const sql = `SELECT * , (SELECT COUNT(*) FROM t_personnel_data ${whereSql}) as total FROM t_personnel_data ${whereSql} LIMIT ${offset},${pageSize}`
-  console.log(sql)
+  // console.log(sql)
   db.query(sql, (err, result) => {
     if (err) {
       return res.cc('查询失败')
@@ -76,13 +76,13 @@ exports.getPersonList = (req, res) => {
 exports.addPerson = (req, res) => {
   const personParams = req.body
   const { name, gender, avatar_url, birthday, join_date, position, is_in_school, avatar_url_name } = personParams
-  let resultAvatarUrl = avatar_url.split('/images/')[1]
-  //修改图片文件名称
-  const filePath = path.join(__dirname, `../public/images/${resultAvatarUrl}`)
-  resultAvatarUrl = avatar_url_name + '.' + resultAvatarUrl.split('.')[1]
-  fs.renameSync(filePath, path.join(__dirname, `../public/images/${resultAvatarUrl}`))
-  const sql = `insert into t_personnel_data (name,gender,avatar_photo,birthday,join_date,position,is_in_school) values ('${name}','${gender}','${resultAvatarUrl}','${birthday}','${join_date}','${position}',${is_in_school})`
-  console.log(sql)
+  // let resultAvatarUrl = avatar_url.split('/images/')[1]
+  // //修改图片文件名称
+  // const filePath = path.join(__dirname, `../public/images/personPhoto/${resultAvatarUrl}`)
+  // resultAvatarUrl = avatar_url_name + '.' + resultAvatarUrl.split('.')[1]
+  // fs.renameSync(filePath, path.join(__dirname, `../public/images/${resultAvatarUrl}`))
+  const sql = `insert into t_personnel_data (name,gender,avatar_photo,birthday,join_date,position,is_in_school) values ('${name}','${gender}','${avatar_url}','${birthday}','${join_date}','${position}',${is_in_school})`
+  // console.log(sql)
   db.query(sql, (err, result) => {
     if (err) {
       res.cc('新增失败')
@@ -100,7 +100,7 @@ exports.editPerson = (req, res) => {
   const personParams = req.body
   const { id, name, gender, avatar_url, birthday, join_date, position, is_in_school, avatar_url_name } = personParams
   //根据id修改数据
-  console.log(personParams)
+  // console.log(personParams)
   let resultAvatarUrl = avatar_url.split('/images/')[1]
   //修改图片文件名称
   const filePath = path.join(__dirname, `../public/images/${resultAvatarUrl}`)
@@ -109,7 +109,7 @@ exports.editPerson = (req, res) => {
     fs.renameSync(filePath, path.join(__dirname, `../public/images/${resultAvatarUrl}`))
   }
   const sql = `update t_personnel_data set name = '${name}',gender = '${gender}',avatar_photo = '${resultAvatarUrl}',birthday = '${birthday}',join_date = '${join_date}',position = '${position}',is_in_school = ${is_in_school} where id = ${id}`
-  console.log(sql)
+  // console.log(sql)
   db.query(sql, (err, result) => {
     if (err) {
       res.cc('编辑失败')
@@ -126,9 +126,9 @@ exports.editPerson = (req, res) => {
 //删除人员
 exports.deletePerson = (req, res) => {
   const { id } = req.query
-  console.log(id)
+  // console.log(id)
   const sql = `delete from t_personnel_data where id = ${id}`
-  console.log(sql)
+  // console.log(sql)
   db.query(sql, (err, result) => {
     if (err) {
       res.cc('删除失败')
